@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div id="quiz-data" data-child-id="{{ child_id }}" data-quiz-id="{{ quiz.id }}" style="display: none;"></div>
+<div id="questions-data" style="display: none;">{{ questions_json | tojson | safe }}</div>
+
+
+<div class="container-fluid" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); min-height: 100vh; padding: 20px;">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Exit Button -->
+            <button class="btn btn-light mb-3" onclick="exitQuiz()">
+                <i class="fas fa-arrow-left"></i> Exit
+            </button>
+            
+            <!-- Quiz Card -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0"><i class="fas fa-{{ quiz.icon }}"></i> {{ quiz.title }}</h3>
+                    <p class="mb-0 mt-2">{{ quiz.description }}</p>
+                </div>
+                <div class="card-body">
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Progress</span>
+                            <span id="progressText">Question 1 of {{ quiz.questions|length }}</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%">
+                                <span id="progressPercent">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Question Display -->
+                    <div id="questionContainer">
+                        <!-- Questions will be loaded here by JavaScript -->
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn btn-secondary" id="prevBtn" onclick="previousQuestion()" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-trophy"></i> Quiz Complete!</h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-3">
+                    <div id="scoreEmoji" style="font-size: 5rem;">🎉</div>
+                </div>
+                <h3>Your Score</h3>
+                <h1 class="text-success" id="finalScore">0/0</h1>
+                <h4 id="finalPercentage">0%</h4>
+                <p class="text-muted mt-3">Time taken: <span id="timeTaken">0:00</span></p>
+                <div id="performanceMessage" class="alert alert-success mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="retakeQuiz()">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+                <button class="btn btn-success" onclick="returnToDashboard()">
+                    <i class="fas fa-home"></i> Back to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const childId = parseInt(document.getElementById('quiz-data').getAttribute('data-child-id'));
+const quizId = parseInt(document.getElementById('quiz-data').getAttribute('data-quiz-id'));
+const startTime = Date.now();
+
+// Load quiz data from hidden div
+const questionsData = JSON.parse(document.getElementById('questions-data').textContent);
+let currentQuestionIndex = 0;
+let userAnswers = [];
+let score = 0;
+
+function loadQuestion(index) {
+    const question = questionsData[index];
+    const container = document.getElementById('questionContainer');
+    
+    let html = '<div class="question-card">';
+    html += '<h4 class="mb-4">Question ' + (index + 1) + '</h4>';
+    html += '<p class="lead mb-4">' + question.question_text + '</p>';
+    
+    if (question.question_type === 'multiple_choice') {
+        html += '<div class="d-grid gap-3">';
+        JSON.parse(question.options).forEach((option, i) => {
+            const isSelected = userAnswers[index] === option;
+            html += '<button class="btn btn-outline-primary btn-lg text-start option-btn ' + 
+                    (isSelected ? 'active' : '') + '" onclick="selectAnswer(\'' + 
+                    option.replace(/'/g, "\\'") + '\')">' +
+                    '<i class="fas fa-' + (isSelected ? 'check-circle' : 'circle') + ' me-2"></i>' +
+                    option + '</button>';
+        });
+        html += '</div>';
+    } else if (question.question_type === 'true_false') {
+        html += '<div class="d-grid gap-3">';
+        ['True', 'False'].forEach(option => {
+            const isSelected = userAnswers[index] === option;
+            html += '<button class="btn btn-outline-primary btn-lg option-btn ' + 
+                    (isSelected ? 'active' : '') + '" onclick="selectAnswer(\'' + option + '\')">' +
+                    '<i class="fas fa-' + (isSelected ? 'check-circle' : 'circle') + ' me-2"></i>' +
+                    option + '</button>';
+        });
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Update progress
+    const progress = ((index + 1) / questionsData.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressPercent').textContent = Math.round(progress) + '%';
+    document.getElementById('progressText').textContent = 'Question ' + (index + 1) + ' of ' + questionsData.length;
+    
+    // Update navigation buttons
+    document.getElementById('prevBtn').disabled = index === 0;
+    
+    if (index === questionsData.length - 1) {
+        document.getElementById('nextBtn').innerHTML = '<i class="fas fa-check"></i> Submit';
+    } else {
+        document.getElementById('nextBtn').innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+    }
+}
+
+function selectAnswer(answer) {
+    userAnswers[currentQuestionIndex] = answer;
+    loadQuestion(currentQuestionIndex);
+}
+
+function previousQuestion() {
+    if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        loadQuestion(currentQuestionIndex);
+    }
+}
+
+function nextQuestion() {
+    if (currentQuestionIndex < questionsData.length - 1) {
+        currentQuestionIndex++;
+        loadQuestion(currentQuestionIndex);
+    } else {
+        submitQuiz();
+    }
+}
+
+function submitQuiz() {
+    // Calculate score
+    score = 0;
+    questionsData.forEach((question, index) => {
+        if (userAnswers[index] === question.correct_answer) {
+            score++;
+        }
+    });
+    
+    const percentage = (score / questionsData.length) * 100;
+    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+    
+    // Save to database
+    fetch('/child/api/quiz-attempt', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            quiz_id: quizId,
+            score: score,
+            total_questions: questionsData.length,
+            percentage: percentage,
+            time_taken_seconds: timeTaken,
+            answers: userAnswers
+        })
+    });
+    
+    // Show results
+    showResults(score, questionsData.length, percentage, timeTaken);
+}
+
+function showResults(score, total, percentage, timeTaken) {
+    document.getElementById('finalScore').textContent = score + '/' + total;
+    document.getElementById('finalPercentage').textContent = Math.round(percentage) + '%';
+    
+    const minutes = Math.floor(timeTaken / 60);
+    const seconds = timeTaken % 60;
+    document.getElementById('timeTaken').textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+    
+    // Set emoji and message based on performance
+    let emoji = '🎉';
+    let message = 'Great job!';
+    let alertClass = 'alert-success';
+    
+    if (percentage >= 90) {
+        emoji = '🏆';
+        message = 'Outstanding! You\'re a star!';
+    } else if (percentage >= 70) {
+        emoji = '🎉';
+        message = 'Well done! Keep up the good work!';
+    } else if (percentage >= 50) {
+        emoji = '😊';
+        message = 'Good effort! Practice makes perfect!';
+        alertClass = 'alert-info';
+    } else {
+        emoji = '💪';
+        message = 'Don\'t give up! Try again and you\'ll do better!';
+        alertClass = 'alert-warning';
+    }
+    
+    document.getElementById('scoreEmoji').textContent = emoji;
+    document.getElementById('performanceMessage').textContent = message;
+    document.getElementById('performanceMessage').className = 'alert mt-3 ' + alertClass;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('resultsModal'));
+    modal.show();
+}
+
+function retakeQuiz() {
+    location.reload();
+}
+
+function returnToDashboard() {
+    window.location.href = '/child/dashboard/' + childId;
+}
+
+function exitQuiz() {
+    if (confirm('Are you sure you want to exit? Your progress will not be saved.')) {
+        window.location.href = '/child/dashboard/' + childId;
+    }
+}
+
+// Initialize
+loadQuestion(0);
+</script>
+
+<style>
+.option-btn {
+    transition: all 0.3s;
+}
+
+.option-btn:hover {
+    transform: translateX(10px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.option-btn.active {
+    background: #0d6efd !important;
+    color: white !important;
+    border-color: #0d6efd !important;
+}
+
+.question-card {
+    min-height: 300px;
+}
+</style>
+{% endblock %}

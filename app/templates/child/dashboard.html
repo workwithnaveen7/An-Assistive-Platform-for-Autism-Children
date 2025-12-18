@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}{{ child.name }}'s Dashboard{% endblock %}
+
+{% block content %}
+<!-- Hidden data container for JavaScript -->
+<div id="child-data" data-child-id="{{ child.id }}" style="display: none;"></div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-child"></i> Welcome, {{ child.name }}!</h2>
+            <a href="{{ url_for('parent.dashboard') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Parent Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Brain State Indicator -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm" id="brain-state-card" data-color="{{ brain_states[current_state]['color'] }}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-brain"></i> Current State</h4>
+                        <h2 class="text-primary" id="current-state-label">
+                            {{ brain_states[current_state]['label'] }}
+                        </h2>
+                        <p class="text-muted" id="state-description">
+                            The platform is tailored for {{ current_state }} band activities
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group" role="group">
+                            {% if child.eeg_enabled %}
+                                <span class="badge bg-success p-3">
+                                    <i class="fas fa-wifi"></i> EEG Connected
+                                </span>
+                            {% else %}
+                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#manualInputModal">
+                                    <i class="fas fa-hand-pointer"></i> Manual Input
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Content Area -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h4><i class="fas fa-star"></i> Recommended Activities</h4>
+    </div>
+    <div class="col-12" id="content-container">
+        <div class="row">
+            {% for item in content %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100 shadow-sm activity-card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-{{ item.content_type }}"></i> {{ item.title }}
+                        </h5>
+                        <p class="card-text">{{ item.description }}</p>
+                        <button class="btn btn-primary btn-sm" 
+                                data-activity-id="{{ item.id }}" 
+                                data-activity-name="{{ item.title }}"
+                                data-activity-type="{{ item.content_type }}"
+                                onclick="startActivity(this)">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Learning Modules Section -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Learning Modules</h5>
+    </div>
+    <div class="card-body">
+        <div class="row" id="quizContainer">
+            <div class="col-12 text-center">
+                <p class="text-muted">Loading quizzes...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visual Routine Scheduler -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h4><i class="fas fa-calendar-check"></i> Today's Routine</h4>
+    </div>
+    {% for routine in routines %}
+    <div class="col-md-3 mb-3">
+        <div class="card text-center routine-card {% if routine.is_completed %}completed{% endif %}">
+            <div class="card-body">
+                <i class="fas fa-{{ routine.icon }} fa-3x mb-2"></i>
+                <h6>{{ routine.title }}</h6>
+                <button class="btn btn-sm btn-success" 
+                        data-routine-id="{{ routine.id }}"
+                        onclick="completeRoutine(this)">
+                    <i class="fas fa-check"></i> Complete
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Mood Tracker -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5><i class="fas fa-smile"></i> How are you feeling?</h5>
+                <div class="btn-group btn-group-lg" role="group">
+                    <button class="btn btn-outline-success" onclick="logMood('happy')">
+                        😊 Happy
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="logMood('calm')">
+                        😌 Calm
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="logMood('anxious')">
+                        😰 Anxious
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="logMood('upset')">
+                        😢 Upset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Manual Input Modal -->
+<div class="modal fade" id="manualInputModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Set Child State Manually</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-3">
+                    {% for state_key, state_info in brain_states.items() %}
+                    <button class="btn btn-lg btn-outline-primary" 
+                            data-state="{{ state_key }}"
+                            data-color="{{ state_info['color'] }}"
+                            onclick="setManualState(this)">
+                        {{ state_info['label'] }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get child ID from data attribute
+const childId = parseInt(document.getElementById('child-data').getAttribute('data-child-id'));
+const socket = io();
+
+// Set initial border color
+document.addEventListener('DOMContentLoaded', function() {
+    const card = document.getElementById('brain-state-card');
+    const color = card.getAttribute('data-color');
+    card.style.borderLeft = '5px solid ' + color;
+    
+    // Set modal button colors
+    const modalButtons = document.querySelectorAll('[data-color]');
+    modalButtons.forEach(btn => {
+        const color = btn.getAttribute('data-color');
+        btn.style.borderLeft = '5px solid ' + color;
+    });
+    
+    // Load quizzes for initial state
+    const currentState = '{{ current_state }}';
+    loadQuizzes(currentState);
+});
+
+// Join child-specific room for real-time updates
+socket.on('connect', function() {
+    socket.emit('join_child_room', {child_id: childId});
+    console.log('Connected to real-time updates');
+});
+
+// Listen for brain state updates
+socket.on('brain_state_update', function(data) {
+    if (data.child_id === childId) {
+        updateBrainState(data);
+        loadContentForState(data.brain_state);
+    }
+});
+
+function updateBrainState(data) {
+    const stateInfo = data.state_info;
+    document.getElementById('current-state-label').textContent = stateInfo.label;
+    document.getElementById('state-description').textContent = 
+        'The platform is tailored for ' + data.brain_state + ' band activities';
+    
+    const card = document.getElementById('brain-state-card');
+    card.style.borderLeftColor = stateInfo.color;
+}
+
+function loadContentForState(state) {
+    fetch('/child/api/content/' + state)
+        .then(response => response.json())
+        .then(content => {
+            const container = document.getElementById('content-container');
+            let html = '<div class="row">';
+            
+            content.forEach(item => {
+                html += '<div class="col-md-4 mb-3">' +
+                    '<div class="card h-100 shadow-sm activity-card">' +
+                    '<div class="card-body">' +
+                    '<h5 class="card-title">' +
+                    '<i class="fas fa-' + getIcon(item.content_type) + '"></i> ' + item.title +
+                    '</h5>' +
+                    '<p class="card-text">' + item.description + '</p>' +
+                    '<button class="btn btn-primary btn-sm" ' +
+                    'data-activity-id="' + item.id + '" ' +
+                    'data-activity-name="' + item.title + '" ' +
+                    'data-activity-type="' + item.content_type + '" ' +
+                    'onclick="startActivity(this)">' +
+                    '<i class="fas fa-play"></i> Start' +
+                    '</button>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        });
+    
+    // Load quizzes for this brain state
+    loadQuizzes(state);
+}
+
+function getIcon(contentType) {
+    const icons = {
+        'exercise': 'lungs',
+        'breathing': 'lungs',
+        'game': 'gamepad',
+        'puzzle': 'puzzle-piece',
+        'video': 'video',
+        'story': 'book',
+        'communication': 'comments',
+        'emotion': 'smile',
+        'music': 'music',
+        'sensory': 'headphones'
+    };
+    return icons[contentType] || 'star';
+}
+
+function loadQuizzes(state) {
+    fetch('/child/api/quizzes/' + state)
+        .then(response => response.json())
+        .then(quizzes => {
+            const container = document.getElementById('quizContainer');
+            
+            if (quizzes.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No quizzes available for this state.</p></div>';
+                return;
+            }
+            
+            let html = '';
+            quizzes.forEach(quiz => {
+                const difficultyStars = '⭐'.repeat(quiz.difficulty_level);
+                html += '<div class="col-md-4 mb-3">' +
+                    '<div class="card h-100 shadow-sm quiz-card" style="border-left: 4px solid #17a2b8;">' +
+                    '<div class="card-body">' +
+                    '<div class="text-center mb-3">' +
+                    '<i class="fas fa-' + quiz.icon + ' fa-3x text-info"></i>' +
+                    '</div>' +
+                    '<h5 class="card-title text-center">' + quiz.title + '</h5>' +
+                    '<p class="card-text text-muted text-center">' + quiz.description + '</p>' +
+                    '<div class="text-center mb-3">' +
+                    '<span class="badge bg-info me-2">' + quiz.question_count + ' Questions</span>' +
+                    '<span class="badge bg-secondary">' + difficultyStars + '</span>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="card-footer bg-transparent text-center">' +
+                    '<button class="btn btn-info w-100" onclick="startQuiz(' + quiz.id + ')">' +
+                    '<i class="fas fa-play-circle"></i> Start Quiz' +
+                    '</button>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+            });
+            
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading quizzes:', error);
+            document.getElementById('quizContainer').innerHTML = 
+                '<div class="col-12 text-center"><p class="text-danger">Error loading quizzes</p></div>';
+        });
+}
+
+function startQuiz(quizId) {
+    window.location.href = '/child/quiz/' + childId + '/' + quizId;
+}
+
+function setManualState(button) {
+    const state = button.getAttribute('data-state');
+    
+    fetch('/child/api/manual-input', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({child_id: childId, state: state})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('manualInputModal')).hide();
+            alert('State set to: ' + state);
+        }
+    });
+}
+
+function startActivity(button) {
+    const activityId = button.getAttribute('data-activity-id');
+    const activityName = button.getAttribute('data-activity-name');
+    const activityType = button.getAttribute('data-activity-type') || 'game';
+    
+    console.log('Starting activity: ' + activityName);
+    
+    // Redirect to activity page
+    window.location.href = '/child/activity/' + childId + '/' + activityType;
+}
+
+function completeRoutine(button) {
+    const routineId = button.getAttribute('data-routine-id');
+    console.log('Completing routine: ' + routineId);
+    alert('Routine completed! Great job! 🎉');
+    
+    // Mark as completed visually
+    button.closest('.routine-card').classList.add('completed');
+}
+
+function logMood(mood) {
+    fetch('/child/api/mood-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({child_id: childId, mood: mood, intensity: 3})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mood logged: ' + mood + ' 😊');
+        }
+    });
+}
+</script>
+
+<style>
+.activity-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.activity-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.quiz-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.quiz-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+}
+
+.quiz-card .card-footer {
+    border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+.routine-card {
+    transition: all 0.3s ease;
+}
+
+.routine-card.completed {
+    opacity: 0.6;
+    background-color: #d4edda;
+}
+
+.routine-card:hover {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Shape Matching Game{% endblock %}
+
+{% block content %}
+<div id="activity-data" data-child-id="{{ child_id }}" data-activity-id="{{ activity_id }}" style="display: none;"></div>
+
+<div class="container-fluid" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); min-height: 100vh; padding: 20px;">
+    <div class="text-center">
+        <button class="btn btn-light mb-3" onclick="exitActivity()">
+            <i class="fas fa-arrow-left"></i> Exit
+        </button>
+        
+        <h1 class="text-white mb-4">🧩 Shape Matching Game</h1>
+        
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-8">
+                <div class="card shadow-lg">
+                    <div class="card-body">
+                        <h3>Match the shapes!</h3>
+                        <p class="text-muted">Drag the shapes to their matching slots</p>
+                        
+                        <div class="row mb-4">
+                            <div class="col text-center">
+                                <h5>Score: <span id="score">0</span> / 5</h5>
+                            </div>
+                        </div>
+                        
+                        <!-- Drop Zones -->
+                        <div class="row mb-4 justify-content-center">
+                            <div class="col-2 drop-zone" data-shape="circle" ondrop="drop(event)" ondragover="allowDrop(event)">
+                                <div class="shape-outline circle-outline"></div>
+                            </div>
+                            <div class="col-2 drop-zone" data-shape="square" ondrop="drop(event)" ondragover="allowDrop(event)">
+                                <div class="shape-outline square-outline"></div>
+                            </div>
+                            <div class="col-2 drop-zone" data-shape="triangle" ondrop="drop(event)" ondragover="allowDrop(event)">
+                                <div class="shape-outline triangle-outline"></div>
+                            </div>
+                            <div class="col-2 drop-zone" data-shape="star" ondrop="drop(event)" ondragover="allowDrop(event)">
+                                <div class="shape-outline star-outline"></div>
+                            </div>
+                            <div class="col-2 drop-zone" data-shape="heart" ondrop="drop(event)" ondragover="allowDrop(event)">
+                                <div class="shape-outline heart-outline"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Draggable Shapes -->
+                        <div class="row justify-content-center" id="shapesContainer">
+                            <div class="col-2">
+                                <div class="shape circle" draggable="true" ondragstart="drag(event)" data-shape="circle">⚫</div>
+                            </div>
+                            <div class="col-2">
+                                <div class="shape square" draggable="true" ondragstart="drag(event)" data-shape="square">🟦</div>
+                            </div>
+                            <div class="col-2">
+                                <div class="shape triangle" draggable="true" ondragstart="drag(event)" data-shape="triangle">🔺</div>
+                            </div>
+                            <div class="col-2">
+                                <div class="shape star" draggable="true" ondragstart="drag(event)" data-shape="star">⭐</div>
+                            </div>
+                            <div class="col-2">
+                                <div class="shape heart" draggable="true" ondragstart="drag(event)" data-shape="heart">❤️</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.drop-zone {
+    min-height: 120px;
+    border: 3px dashed #ccc;
+    border-radius: 10px;
+    margin: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    transition: all 0.3s;
+}
+
+.drop-zone.drag-over {
+    background: #e3f2fd;
+    border-color: #2196F3;
+    transform: scale(1.05);
+}
+
+.drop-zone.correct {
+    background: #c8e6c9;
+    border-color: #4CAF50;
+}
+
+.shape {
+    font-size: 4rem;
+    cursor: move;
+    padding: 10px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.shape:hover {
+    transform: scale(1.2);
+}
+
+.shape-outline {
+    width: 80px;
+    height: 80px;
+    border: 3px dashed #999;
+    margin: 0 auto;
+}
+
+.circle-outline {
+    border-radius: 50%;
+}
+
+.square-outline {
+    border-radius: 5px;
+}
+
+.triangle-outline {
+    width: 0;
+    height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-bottom: 70px solid transparent;
+    border-bottom-color: #999;
+    border-bottom-style: dashed;
+}
+
+.star-outline {
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.heart-outline {
+    position: relative;
+    border-radius: 50% 50% 0 0;
+    transform: rotate(-45deg);
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const childId = parseInt(document.getElementById('activity-data').getAttribute('data-child-id'));
+let score = 0;
+const startTime = Date.now();
+
+function allowDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.add('drag-over');
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("shape", ev.target.getAttribute('data-shape'));
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+    
+    const shape = ev.dataTransfer.getData("shape");
+    const dropZone = ev.currentTarget;
+    const expectedShape = dropZone.getAttribute('data-shape');
+    
+    if (shape === expectedShape && !dropZone.classList.contains('correct')) {
+        score++;
+        document.getElementById('score').textContent = score;
+        dropZone.classList.add('correct');
+        
+        // Play success sound (optional)
+        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIF2m98OScTgwPUKnl87JlHAU2kNXzzn0sBS');
+        
+        // Check if game complete
+        if (score === 5) {
+            setTimeout(completeActivity, 1000);
+        }
+    }
+}
+
+function completeActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    
+    alert('🎉 Excellent! You matched all shapes!');
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Shape Matching Game',
+            duration_seconds: duration,
+            completion_rate: 100
+        })
+    }).then(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    });
+}
+
+function exitActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const completion = (score / 5) * 100;
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Shape Matching Game',
+            duration_seconds: duration,
+            completion_rate: completion
+        })
+    }).then(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    });
+}
+
+// Remove drag-over class when dragging out
+document.querySelectorAll('.drop-zone').forEach(zone => {
+    zone.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+    });
+});
+</script>
+{% endblock %}

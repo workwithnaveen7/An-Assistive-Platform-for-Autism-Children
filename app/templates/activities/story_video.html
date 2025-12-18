@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Story Time{% endblock %}
+
+{% block content %}
+<div id="activity-data" data-child-id="{{ child_id }}" data-activity-id="{{ activity_id }}" style="display: none;"></div>
+
+<div class="container-fluid vh-100" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); padding: 20px;">
+    <div class="text-center">
+        <button class="btn btn-light mb-3" onclick="exitActivity()">
+            <i class="fas fa-arrow-left"></i> Exit
+        </button>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-lg">
+                    <div class="card-body p-4">
+                        <h2 class="mb-4">📖 Story Time</h2>
+                        
+                        <!-- Story Display Area -->
+                        <div id="storyContainer" class="mb-4 p-4" style="background: #fff3e0; border-radius: 15px; min-height: 300px;">
+                            <div id="storyImage" class="mb-3" style="font-size: 5rem; text-align: center;">
+                                🌳
+                            </div>
+                            <p id="storyText" style="font-size: 1.5rem; line-height: 2; text-align: center;">
+                                Once upon a time, in a magical forest...
+                            </p>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="progress mb-3" style="height: 30px;">
+                            <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%">
+                                <span id="progressText">0 / 5</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Controls -->
+                        <div class="d-flex justify-content-center gap-3">
+                            <button class="btn btn-secondary btn-lg" id="prevBtn" onclick="previousPage()" disabled>
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <button class="btn btn-primary btn-lg" id="nextBtn" onclick="nextPage()">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const childId = parseInt(document.getElementById('activity-data').getAttribute('data-child-id'));
+const startTime = Date.now();
+let currentPage = 0;
+
+const story = [
+    {
+        image: "🌳",
+        text: "Once upon a time, in a magical forest, there lived a friendly rabbit named Ruby."
+    },
+    {
+        image: "🐰",
+        text: "Ruby loved to explore and make new friends. One day, she decided to go on an adventure."
+    },
+    {
+        image: "🦊",
+        text: "Along the way, Ruby met Felix the fox. 'Hello!' said Ruby. 'Would you like to be friends?'"
+    },
+    {
+        image: "🌈",
+        text: "Felix smiled and said 'Yes!' Together, they found a beautiful rainbow and danced underneath it."
+    },
+    {
+        image: "⭐",
+        text: "From that day on, Ruby and Felix were the best of friends. They learned that friendship makes every day magical! The End."
+    }
+];
+
+function updateStory() {
+    const page = story[currentPage];
+    document.getElementById('storyImage').textContent = page.image;
+    document.getElementById('storyText').textContent = page.text;
+    
+    // Update progress
+    const progress = ((currentPage + 1) / story.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressText').textContent = (currentPage + 1) + ' / ' + story.length;
+    
+    // Update buttons
+    document.getElementById('prevBtn').disabled = currentPage === 0;
+    
+    if (currentPage === story.length - 1) {
+        document.getElementById('nextBtn').innerHTML = '<i class="fas fa-check"></i> Finish';
+    } else {
+        document.getElementById('nextBtn').innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+    }
+}
+
+function nextPage() {
+    if (currentPage < story.length - 1) {
+        currentPage++;
+        updateStory();
+    } else {
+        completeActivity();
+    }
+}
+
+function previousPage() {
+    if (currentPage > 0) {
+        currentPage--;
+        updateStory();
+    }
+}
+
+function completeActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    
+    alert('🎉 Great job! You finished the story!');
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Story Time',
+            duration_seconds: duration,
+            completion_rate: 100
+        })
+    }).then(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    });
+}
+
+function exitActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const completion = ((currentPage + 1) / story.length) * 100;
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Story Time',
+            duration_seconds: duration,
+            completion_rate: completion
+        })
+    }).then(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    });
+}
+
+// Initialize
+updateStory();
+</script>
+{% endblock %}

@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Music Relaxation{% endblock %}
+
+{% block content %}
+<div id="activity-data" data-child-id="{{ child_id }}" data-activity-id="{{ activity_id }}" style="display: none;"></div>
+
+<div class="container-fluid vh-100 d-flex flex-column" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px;">
+    <!-- Exit Button at Top -->
+    <div class="position-relative w-100 mb-3" style="z-index: 1000;">
+        <button class="btn btn-light" onclick="exitActivity()" style="position: absolute; top: 0; left: 0;">
+            <i class="fas fa-arrow-left"></i> Exit
+        </button>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+        <div class="text-center text-white w-100">
+            <h1 class="mb-5">🎵 Music & Relaxation</h1>
+            
+            <!-- Visual Animation -->
+            <div class="music-visualizer mb-4">
+                <div class="wave wave1"></div>
+                <div class="wave wave2"></div>
+                <div class="wave wave3"></div>
+                <div class="wave wave4"></div>
+                <div class="wave wave5"></div>
+            </div>
+            
+            <!-- Music Control -->
+            <div class="card mx-auto" style="max-width: 500px; background: rgba(255,255,255,0.95);">
+                <div class="card-body p-4">
+                    <h4 class="text-dark mb-4">Choose Your Sound</h4>
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-primary btn-lg sound-btn" data-sound="rain" onclick="playSound('rain')">
+                            <i class="fas fa-cloud-rain"></i> Rain Sounds
+                        </button>
+                        <button class="btn btn-info btn-lg sound-btn" data-sound="ocean" onclick="playSound('ocean')">
+                            <i class="fas fa-water"></i> Ocean Waves
+                        </button>
+                        <button class="btn btn-success btn-lg sound-btn" data-sound="birds" onclick="playSound('birds')">
+                            <i class="fas fa-dove"></i> Forest Birds
+                        </button>
+                        <button class="btn btn-warning btn-lg sound-btn" data-sound="piano" onclick="playSound('piano')">
+                            <i class="fas fa-music"></i> Gentle Piano
+                        </button>
+                        <button class="btn btn-secondary btn-lg sound-btn" data-sound="flute" onclick="playSound('flute')">
+                            <i class="fas fa-guitar"></i> Peaceful Flute
+                        </button>
+                    </div>
+                    
+                    <div id="nowPlaying" class="mt-4" style="display: none;">
+                        <div class="alert alert-success mb-3">
+                            <h5 class="mb-0"><i class="fas fa-play-circle"></i> Now Playing: <span id="currentSound"></span></h5>
+                        </div>
+                        
+                        <!-- Volume Control -->
+                        <div class="mb-3">
+                            <label for="volumeControl" class="form-label text-dark">
+                                <i class="fas fa-volume-up"></i> Volume: <span id="volumeValue">70</span>%
+                            </label>
+                            <input type="range" class="form-range" id="volumeControl" min="0" max="100" value="70" oninput="changeVolume(this.value)">
+                        </div>
+                        
+                        <!-- Timer -->
+                        <p class="text-muted mb-3">
+                            <i class="fas fa-clock"></i> Playing for: <span id="timer">0:00</span>
+                        </p>
+                        
+                        <!-- Controls -->
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-warning" id="pauseBtn" onclick="pauseSound()">
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                            <button class="btn btn-danger" onclick="stopSound()">
+                                <i class="fas fa-stop"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div id="instructions" class="mt-3">
+                        <p class="text-muted small">
+                            <i class="fas fa-info-circle"></i> Choose a relaxing sound to help you feel calm and peaceful
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Audio Element -->
+<audio id="audioPlayer" loop></audio>
+
+<style>
+.music-visualizer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    height: 200px;
+}
+
+.wave {
+    width: 20px;
+    background: white;
+    border-radius: 10px;
+    animation: wave-idle 2s ease-in-out infinite;
+    opacity: 0.6;
+}
+
+.wave1 { animation-delay: 0s; }
+.wave2 { animation-delay: 0.1s; }
+.wave3 { animation-delay: 0.2s; }
+.wave4 { animation-delay: 0.3s; }
+.wave5 { animation-delay: 0.4s; }
+
+@keyframes wave-idle {
+    0%, 100% { height: 50px; }
+    50% { height: 80px; }
+}
+
+@keyframes wave-playing {
+    0%, 100% { height: 40px; }
+    50% { height: 180px; }
+}
+
+.wave.playing {
+    animation: wave-playing 0.8s ease-in-out infinite;
+    opacity: 1;
+}
+
+.sound-btn {
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.sound-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.sound-btn.active {
+    background: linear-gradient(45deg, #4CAF50, #45a049) !important;
+    border-color: #4CAF50 !important;
+    color: white !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+    50% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #667eea;
+}
+
+.form-range::-moz-range-thumb {
+    background: #667eea;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const childId = parseInt(document.getElementById('activity-data').getAttribute('data-child-id'));
+const startTime = Date.now();
+let playStartTime = null;
+let timerInterval = null;
+let currentlyPlaying = null;
+let isPaused = false;
+
+const audioPlayer = document.getElementById('audioPlayer');
+
+// Audio file paths - using local files
+const audioFiles = {
+    rain: "{{ url_for('static', filename='audio/rain.mp3') }}",
+    ocean: "{{ url_for('static', filename='audio/ocean.mp3') }}",
+    birds: "{{ url_for('static', filename='audio/birds.mp3') }}",
+    piano: "{{ url_for('static', filename='audio/piano.mp3') }}",
+    flute: "{{ url_for('static', filename='audio/flute.mp3') }}"
+};
+
+const soundNames = {
+    rain: '🌧️ Rain Sounds',
+    ocean: '🌊 Ocean Waves',
+    birds: '🌲 Forest Birds',
+    piano: '🎼 Gentle Piano',
+    flute: '🎵 Peaceful Flute'
+};
+
+function playSound(soundType) {
+    // If same sound is playing, just resume if paused
+    if (currentlyPlaying === soundType && isPaused) {
+        audioPlayer.play();
+        isPaused = false;
+        updateWaves(true);
+        document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> Pause';
+        return;
+    }
+    
+    // Stop any currently playing sound
+    if (currentlyPlaying) {
+        stopSound();
+    }
+    
+    currentlyPlaying = soundType;
+    isPaused = false;
+    playStartTime = Date.now();
+    
+    // Load and play audio from local file
+    audioPlayer.src = audioFiles[soundType];
+    audioPlayer.volume = 0.7; // 70% volume
+    
+    audioPlayer.play().catch(error => {
+        console.error('Audio play failed:', error);
+        alert('Could not play audio. Make sure the audio file exists in app/static/audio/');
+    });
+    
+    // Update UI
+    document.getElementById('nowPlaying').style.display = 'block';
+    document.getElementById('instructions').style.display = 'none';
+    document.getElementById('currentSound').textContent = soundNames[soundType];
+    
+    // Highlight active button
+    document.querySelectorAll('.sound-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    // Animate waves
+    updateWaves(true);
+    
+    // Start timer
+    timerInterval = setInterval(updateTimer, 1000);
+}
+
+function pauseSound() {
+    if (audioPlayer.paused) {
+        audioPlayer.play();
+        isPaused = false;
+        updateWaves(true);
+        document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> Pause';
+    } else {
+        audioPlayer.pause();
+        isPaused = true;
+        updateWaves(false);
+        document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play"></i> Resume';
+    }
+}
+
+function stopSound() {
+    currentlyPlaying = null;
+    isPaused = false;
+    
+    // Stop audio
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+    
+    // Stop timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    // Reset UI
+    document.getElementById('nowPlaying').style.display = 'none';
+    document.getElementById('instructions').style.display = 'block';
+    document.getElementById('timer').textContent = '0:00';
+    
+    // Remove active button
+    document.querySelectorAll('.sound-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Stop wave animation
+    updateWaves(false);
+    
+    // Reset pause button
+    document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> Pause';
+}
+
+function changeVolume(value) {
+    audioPlayer.volume = value / 100;
+    document.getElementById('volumeValue').textContent = value;
+}
+
+function updateWaves(isPlaying) {
+    document.querySelectorAll('.wave').forEach(wave => {
+        if (isPlaying) {
+            wave.classList.add('playing');
+        } else {
+            wave.classList.remove('playing');
+        }
+    });
+}
+
+function updateTimer() {
+    if (!playStartTime) return;
+    
+    const elapsed = Math.floor((Date.now() - playStartTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    
+    document.getElementById('timer').textContent = 
+        minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+}
+
+function exitActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const completion = duration >= 60 ? 100 : (duration / 60) * 100; // 1 minute = 100%
+    
+    // Stop audio
+    audioPlayer.pause();
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Music Relaxation',
+            duration_seconds: duration,
+            completion_rate: completion
+        })
+    }).then(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    });
+}
+
+// Handle audio errors
+audioPlayer.addEventListener('error', function(e) {
+    console.error('Audio error:', e);
+    alert('Failed to load audio file. Please check:\n1. File exists in app/static/audio/\n2. File name is correct\n3. File is a valid MP3');
+    stopSound();
+});
+</script>
+{% endblock %}

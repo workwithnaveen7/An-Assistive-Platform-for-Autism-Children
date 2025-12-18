@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Parent Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-home"></i> Parent Dashboard</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChildModal">
+                <i class="fas fa-plus"></i> Add Child
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for stat in child_stats %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow-sm h-100 child-card">
+            <div class="card-body">
+                <h4 class="card-title">
+                    <i class="fas fa-child"></i> {{ stat.child.name }}
+                    {% if stat.child.eeg_enabled %}
+                    <span class="badge bg-success">EEG</span>
+                    {% endif %}
+                </h4>
+                
+                <p class="text-muted">Age: {{ stat.child.age or 'N/A' }}</p>
+                
+                <div class="mb-3">
+                    <strong>Current State:</strong>
+                    {% if stat.child.current_state %}
+                    <span class="badge" data-bg-color="{{ brain_states[stat.child.current_state]['color'] }}">
+                        {{ brain_states[stat.child.current_state]['label'] }}
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary">
+                        Unknown
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Today's Activities:</strong> {{ stat.activity_count }}
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Latest Mood:</strong> {{ stat.latest_mood }}
+                </div>
+                
+                <div class="btn-group d-flex" role="group">
+                    <a href="{{ url_for('child.dashboard', child_id=stat.child.id) }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-desktop"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('parent.analytics', child_id=stat.child.id) }}" 
+                       class="btn btn-info">
+                        <i class="fas fa-chart-line"></i> Analytics
+                    </a>
+                    <a href="{{ url_for('parent.child_settings', child_id=stat.child.id) }}" 
+                       class="btn btn-secondary">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <h4>No children added yet</h4>
+            <p>Click "Add Child" to create your first child profile</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add Child Modal -->
+<div class="modal fade" id="addChildModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Child</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addChildForm">
+                    <div class="mb-3">
+                        <label class="form-label">Child Name</label>
+                        <input type="text" class="form-control" id="childName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" id="childAge" min="1" max="18">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="eegEnabled">
+                        <label class="form-check-label" for="eegEnabled">
+                            Enable EEG Hardware Integration
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addChild()">Add Child</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set badge background colors on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const badges = document.querySelectorAll('.badge[data-bg-color]');
+    badges.forEach(badge => {
+        const color = badge.getAttribute('data-bg-color');
+        badge.style.backgroundColor = color;
+    });
+});
+
+function addChild() {
+    const name = document.getElementById('childName').value;
+    const age = document.getElementById('childAge').value;
+    const eegEnabled = document.getElementById('eegEnabled').checked;
+    
+    fetch('/parent/child/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            name: name,
+            age: age ? parseInt(age) : null,
+            eeg_enabled: eegEnabled
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Child added successfully!');
+            location.reload();
+        }
+    });
+}
+</script>
+{% endblock %}

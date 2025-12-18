@@ -1,0 +1,34 @@
+autism_assistive_platform/
+├── app/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── auth/
+│   │   ├── __init__.py
+│   │   ├── routes.py
+│   │   └── forms.py
+│   ├── child_dashboard/
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   ├── parent_dashboard/
+│   │   ├── __init__.py
+│   │   └── routes.py
+│   ├── eeg_processor/
+│   │   ├── __init__.py
+│   │   └── classifier.py
+│   ├── templates/
+│   │   ├── base.html
+│   │   ├── auth/
+│   │   │   ├── login.html
+│   │   │   └── register.html
+│   │   ├── child/
+│   │   │   └── dashboard.html
+│   │   └── parent/
+│   │       └── dashboard.html
+│   └── static/
+│       ├── css/
+│       │   └── style.css
+│       └── js/
+│           └── dashboard.js
+├── config.py
+├── requirements.txt
+└── run.py

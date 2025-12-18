@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Breathing Exercise{% endblock %}
+
+{% block content %}
+<div id="activity-data" data-child-id="{{ child_id }}" data-activity-id="{{ activity_id }}" style="display: none;"></div>
+
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="text-center text-white">
+        <button class="btn btn-light mb-4" onclick="exitActivity()">
+            <i class="fas fa-arrow-left"></i> Exit
+        </button>
+        
+        <h1 class="mb-5">🌬️ Calm Breathing Exercise</h1>
+        
+        <!-- Breathing Circle -->
+        <div class="breathing-container mb-4">
+            <div class="breathing-circle" id="breathingCircle">
+                <div class="breathing-text" id="breathingText">Get Ready...</div>
+            </div>
+        </div>
+        
+        <!-- Instructions -->
+        <h3 id="instruction" class="mb-4">Take a deep breath</h3>
+        
+        <!-- Progress -->
+        <div class="mb-3">
+            <h4>Breaths Completed: <span id="breathCount">0</span> / 5</h4>
+        </div>
+        
+        <button class="btn btn-light btn-lg" id="startBtn" onclick="startBreathing()">
+            <i class="fas fa-play"></i> Start Exercise
+        </button>
+    </div>
+</div>
+
+<style>
+.breathing-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
+}
+
+.breathing-circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 4s ease-in-out;
+    box-shadow: 0 0 50px rgba(255, 255, 255, 0.5);
+}
+
+.breathing-circle.inhale {
+    width: 280px;
+    height: 280px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.breathing-circle.exhale {
+    width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.breathing-text {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const childId = parseInt(document.getElementById('activity-data').getAttribute('data-child-id'));
+const activityId = parseInt(document.getElementById('activity-data').getAttribute('data-activity-id'));
+let breathCount = 0;
+let isRunning = false;
+const startTime = Date.now();
+
+function startBreathing() {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById('startBtn').style.display = 'none';
+    breathCycle();
+}
+
+function breathCycle() {
+    if (breathCount >= 5) {
+        completeActivity();
+        return;
+    }
+    
+    // Inhale phase
+    document.getElementById('instruction').textContent = 'Breathe In...';
+    document.getElementById('breathingText').textContent = 'Inhale';
+    document.getElementById('breathingCircle').classList.add('inhale');
+    document.getElementById('breathingCircle').classList.remove('exhale');
+    
+    setTimeout(() => {
+        // Hold phase
+        document.getElementById('instruction').textContent = 'Hold...';
+        document.getElementById('breathingText').textContent = 'Hold';
+        
+        setTimeout(() => {
+            // Exhale phase
+            document.getElementById('instruction').textContent = 'Breathe Out...';
+            document.getElementById('breathingText').textContent = 'Exhale';
+            document.getElementById('breathingCircle').classList.remove('inhale');
+            document.getElementById('breathingCircle').classList.add('exhale');
+            
+            setTimeout(() => {
+                breathCount++;
+                document.getElementById('breathCount').textContent = breathCount;
+                
+                if (breathCount < 5) {
+                    setTimeout(breathCycle, 1000);
+                } else {
+                    completeActivity();
+                }
+            }, 4000);
+        }, 2000);
+    }, 4000);
+}
+
+function completeActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    
+    document.getElementById('instruction').textContent = 'Great Job! 🎉';
+    document.getElementById('breathingText').textContent = '✓';
+    
+    // Log activity completion
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Breathing Exercise',
+            duration_seconds: duration,
+            completion_rate: 100
+        })
+    });
+    
+    setTimeout(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    }, 3000);
+}
+
+function exitActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const completion = (breathCount / 5) * 100;
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Breathing Exercise',
+            duration_seconds: duration,
+            completion_rate: completion
+        })
+    });
+    
+    window.location.href = '/child/dashboard/' + childId;
+}
+</script>
+{% endblock %}

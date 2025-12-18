@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - {{ child.name }}{% endblock %}
+
+{% block content %}
+<!-- Hidden data -->
+<div id="child-data" data-child-id="{{ child.id }}" style="display: none;"></div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-cog"></i> Settings for {{ child.name }}</h2>
+            <a href="{{ url_for('parent.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Basic Information -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Basic Information</h5>
+            </div>
+            <div class="card-body">
+                <form id="basicInfoForm">
+                    <div class="mb-3">
+                        <label for="childName" class="form-label">Child Name</label>
+                        <input type="text" class="form-control" id="childName" value="{{ child.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="childAge" class="form-label">Age</label>
+                        <input type="number" class="form-control" id="childAge" value="{{ child.age or '' }}" min="1" max="18">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- EEG Hardware Settings -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-brain"></i> EEG Hardware Integration</h5>
+            </div>
+            <div class="card-body">
+                <form id="eegSettingsForm">
+                    <div class="mb-3 form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="eegEnabled" 
+                               {{ 'checked' if child.eeg_enabled else '' }}>
+                        <label class="form-check-label" for="eegEnabled">
+                            Enable EEG Hardware Device
+                        </label>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>EEG Mode:</strong> When enabled, the system will automatically detect brain states from the connected EEG device. When disabled, parents can manually set the child's state.
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Update EEG Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manage Routines -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Daily Routines</h5>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-info mb-3" data-bs-toggle="modal" data-bs-target="#addRoutineModal">
+                    <i class="fas fa-plus"></i> Add New Routine
+                </button>
+                
+                <div id="routinesList">
+                    <p class="text-muted">Loading routines...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Sidebar -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-muted">Current State</h6>
+                    <h4>{{ child.current_state or 'Not Set' }}</h4>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-muted">Created On</h6>
+                    <p>{{ child.created_at.strftime('%B %d, %Y') }}</p>
+                </div>
+                <hr>
+                <a href="{{ url_for('child.dashboard', child_id=child.id) }}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-desktop"></i> View Dashboard
+                </a>
+                <a href="{{ url_for('parent.analytics', child_id=child.id) }}" class="btn btn-info w-100">
+                    <i class="fas fa-chart-line"></i> View Analytics
+                </a>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Once you delete a child profile, there is no going back. All data will be permanently deleted.</p>
+                <button class="btn btn-danger w-100" onclick="deleteChild()">
+                    <i class="fas fa-trash"></i> Delete Child Profile
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Routine Modal -->
+<div class="modal fade" id="addRoutineModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Routine</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRoutineForm">
+                    <div class="mb-3">
+                        <label class="form-label">Routine Title</label>
+                        <input type="text" class="form-control" id="routineTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="routineDescription" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Time Slot</label>
+                        <select class="form-select" id="routineTimeSlot">
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                            <option value="evening">Evening</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Icon</label>
+                        <select class="form-select" id="routineIcon">
+                            <option value="sun">☀️ Sun</option>
+                            <option value="utensils">🍽️ Meal</option>
+                            <option value="book">📚 Study</option>
+                            <option value="bed">🛏️ Sleep</option>
+                            <option value="shower">🚿 Hygiene</option>
+                            <option value="play">🎮 Play</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addRoutine()">Add Routine</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get child ID from data attribute
+const childId = parseInt(document.getElementById('child-data').getAttribute('data-child-id'));
+
+// Basic Info Form
+document.getElementById('basicInfoForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('childName').value;
+    const age = document.getElementById('childAge').value;
+    
+    fetch('/parent/child/' + childId + '/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            name: name,
+            age: age ? parseInt(age) : null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Settings updated successfully!');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Error updating settings');
+        console.error(error);
+    });
+});
+
+// EEG Settings Form
+document.getElementById('eegSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const eegEnabled = document.getElementById('eegEnabled').checked;
+    
+    fetch('/parent/child/' + childId + '/settings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            eeg_enabled: eegEnabled
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('EEG settings updated successfully!');
+        }
+    })
+    .catch(error => {
+        alert('Error updating EEG settings');
+        console.error(error);
+    });
+});
+
+// Load Routines
+function loadRoutines() {
+    fetch('/parent/child/' + childId + '/routines')
+        .then(response => response.text())
+        .then(html => {
+            // This would ideally return JSON, but for now we'll just show a message
+            document.getElementById('routinesList').innerHTML = 
+                '<p class="text-muted">Routine management coming soon. Use the child dashboard to mark routines complete.</p>';
+        });
+}
+
+// Add Routine
+function addRoutine() {
+    const title = document.getElementById('routineTitle').value;
+    const description = document.getElementById('routineDescription').value;
+    const timeSlot = document.getElementById('routineTimeSlot').value;
+    const icon = document.getElementById('routineIcon').value;
+    
+    fetch('/parent/child/' + childId + '/routines', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            title: title,
+            description: description,
+            time_slot: timeSlot,
+            icon: icon
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Routine added successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('addRoutineModal')).hide();
+            loadRoutines();
+            document.getElementById('addRoutineForm').reset();
+        }
+    })
+    .catch(error => {
+        alert('Error adding routine');
+        console.error(error);
+    });
+}
+
+// Delete Child
+function deleteChild() {
+    if (confirm('Are you sure you want to delete this child profile? This action cannot be undone!')) {
+        if (confirm('This will permanently delete ALL data for this child. Are you absolutely sure?')) {
+            alert('Delete functionality will be implemented. For now, please use database management.');
+        }
+    }
+}
+
+// Load routines on page load
+document.addEventListener('DOMContentLoaded', loadRoutines);
+</script>
+{% endblock %}

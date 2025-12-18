@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Emotion Communication Board{% endblock %}
+
+{% block content %}
+<div id="activity-data" data-child-id="{{ child_id }}" data-activity-id="{{ activity_id }}" style="display: none;"></div>
+
+<div class="container-fluid vh-100" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px;">
+    <div class="text-center">
+        <button class="btn btn-light mb-3" onclick="exitActivity()">
+            <i class="fas fa-arrow-left"></i> Exit
+        </button>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow-lg">
+                    <div class="card-body p-4">
+                        <h2 class="mb-4">💬 How Are You Feeling?</h2>
+                        <p class="text-muted mb-4">Tap on the emotion card that matches how you feel</p>
+                        
+                        <!-- Selected Emotion Display -->
+                        <div id="selectedDisplay" class="mb-4 p-4" style="background: #e3f2fd; border-radius: 15px; min-height: 150px; display: none;">
+                            <h3>You feel:</h3>
+                            <div id="selectedEmoji" style="font-size: 5rem;"></div>
+                            <h4 id="selectedLabel"></h4>
+                            <p id="selectedMessage" style="font-size: 1.2rem;"></p>
+                        </div>
+                        
+                        <!-- Emotion Cards -->
+                        <div class="row g-3">
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('happy', '😊', 'Happy', 'I feel joyful and excited!')">
+                                    <div class="emoji">😊</div>
+                                    <h5>Happy</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('sad', '😢', 'Sad', 'I feel a little down.')">
+                                    <div class="emoji">😢</div>
+                                    <h5>Sad</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('angry', '😠', 'Angry', 'I feel frustrated.')">
+                                    <div class="emoji">😠</div>
+                                    <h5>Angry</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('scared', '😨', 'Scared', 'I feel worried or afraid.')">
+                                    <div class="emoji">😨</div>
+                                    <h5>Scared</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('calm', '😌', 'Calm', 'I feel peaceful and relaxed.')">
+                                    <div class="emoji">😌</div>
+                                    <h5>Calm</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('excited', '🤩', 'Excited', 'I feel energetic and ready!')">
+                                    <div class="emoji">🤩</div>
+                                    <h5>Excited</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('tired', '😴', 'Tired', 'I need some rest.')">
+                                    <div class="emoji">😴</div>
+                                    <h5>Tired</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="emotion-card" onclick="selectEmotion('confused', '😕', 'Confused', 'I need some help understanding.')">
+                                    <div class="emoji">😕</div>
+                                    <h5>Confused</h5>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Need Cards -->
+                        <h3 class="mt-5 mb-3">What Do You Need?</h3>
+                        <div class="row g-3">
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('water', '💧', 'Water')">
+                                    <div class="emoji">💧</div>
+                                    <h6>Water</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('food', '🍎', 'Food')">
+                                    <div class="emoji">🍎</div>
+                                    <h6>Food</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('bathroom', '🚽', 'Bathroom')">
+                                    <div class="emoji">🚽</div>
+                                    <h6>Bathroom</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('break', '⏸️', 'Break')">
+                                    <div class="emoji">⏸️</div>
+                                    <h6>Break</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('help', '🙋', 'Help')">
+                                    <div class="emoji">🙋</div>
+                                    <h6>Help</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('quiet', '🤫', 'Quiet Time')">
+                                    <div class="emoji">🤫</div>
+                                    <h6>Quiet</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('play', '🎮', 'Play')">
+                                    <div class="emoji">🎮</div>
+                                    <h6>Play</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="need-card" onclick="selectNeed('hug', '🤗', 'Hug')">
+                                    <div class="emoji">🤗</div>
+                                    <h6>Hug</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.emotion-card, .need-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    height: 100%;
+}
+
+.emotion-card:hover, .need-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.emotion-card.selected {
+    background: #4CAF50;
+    color: white;
+    transform: scale(1.1);
+}
+
+.need-card.selected {
+    background: #2196F3;
+    color: white;
+    transform: scale(1.1);
+}
+
+.emoji {
+    font-size: 4rem;
+    margin-bottom: 10px;
+}
+
+.need-card .emoji {
+    font-size: 3rem;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const childId = parseInt(document.getElementById('activity-data').getAttribute('data-child-id'));
+const startTime = Date.now();
+let interactionCount = 0;
+
+function selectEmotion(emotion, emoji, label, message) {
+    interactionCount++;
+    
+    // Show selection
+    document.getElementById('selectedDisplay').style.display = 'block';
+    document.getElementById('selectedEmoji').textContent = emoji;
+    document.getElementById('selectedLabel').textContent = label;
+    document.getElementById('selectedMessage').textContent = message;
+    
+    // Highlight selected card
+    document.querySelectorAll('.emotion-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+    
+    // Log mood
+    fetch('/child/api/mood-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            mood: emotion,
+            intensity: 3
+        })
+    });
+    
+    // Scroll to display
+    document.getElementById('selectedDisplay').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectNeed(need, emoji, label) {
+    interactionCount++;
+    
+    // Show selection
+    document.getElementById('selectedDisplay').style.display = 'block';
+    document.getElementById('selectedEmoji').textContent = emoji;
+    document.getElementById('selectedLabel').textContent = 'I need: ' + label;
+    document.getElementById('selectedMessage').textContent = 'Your parent has been notified!';
+    
+    // Highlight selected card
+    document.querySelectorAll('.need-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    event.currentTarget.classList.add('selected');
+    
+    // You could add notification logic here
+    setTimeout(() => {
+        alert('✓ Message sent to parent: Child needs ' + label);
+    }, 500);
+    
+    // Scroll to display
+    document.getElementById('selectedDisplay').scrollIntoView({ behavior: 'smooth' });
+}
+
+function exitActivity() {
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    const completion = Math.min((interactionCount / 3) * 100, 100); // 3 interactions = 100%
+    
+    fetch('/child/api/activity-log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            activity_type: 'Communication Board',
+            duration_seconds: duration,
+            completion_rate: completion
+        })
+    }).then(() => {
+        window.location.href = '/child/dashboard/' + childId;
+    });
+}
+</script>
+{% endblock %}
