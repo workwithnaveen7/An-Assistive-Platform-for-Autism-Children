@@ -35,6 +35,7 @@ class Child(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     eeg_enabled = db.Column(db.Boolean, default=False)
     current_state = db.Column(db.String(20), default='alpha')  # delta, theta, alpha, beta, gamma
+    theme_preference = db.Column(db.String(50), default='mountain') 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships

@@ -10,9 +10,14 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-child"></i> Welcome, {{ child.name }}!</h2>
-            <a href="{{ url_for('parent.dashboard') }}" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left"></i> Back to Parent Dashboard
-            </a>
+            <div>
+                <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#themeModal">
+                    <i class="fas fa-palette"></i> Change Theme
+                </button>
+                <a href="{{ url_for('parent.dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Parent Dashboard
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -166,6 +171,88 @@
     </div>
 </div>
 
+<!-- Theme Customization Modal -->
+<div class="modal fade" id="themeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-palette"></i> Choose Your Theme</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-center mb-4">Pick a fun background for your dashboard!</p>
+                <div class="row g-3">
+                    <!-- Mountain Theme -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="theme-card" onclick="selectTheme('mountain')" data-theme="mountain">
+                            <div class="theme-preview theme-mountain">
+                                <div class="theme-overlay">
+                                    <i class="fas fa-check-circle theme-check"></i>
+                                </div>
+                            </div>
+                            <h6 class="text-center mt-2">🏔️ Mountain</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Space Theme -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="theme-card" onclick="selectTheme('space')" data-theme="space">
+                            <div class="theme-preview theme-space-preview">
+                                <div class="theme-overlay">
+                                    <i class="fas fa-check-circle theme-check"></i>
+                                </div>
+                            </div>
+                            <h6 class="text-center mt-2">🚀 Space</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Nature Theme -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="theme-card" onclick="selectTheme('nature')" data-theme="nature">
+                            <div class="theme-preview theme-nature-preview">
+                                <div class="theme-overlay">
+                                    <i class="fas fa-check-circle theme-check"></i>
+                                </div>
+                            </div>
+                            <h6 class="text-center mt-2">🌳 Nature</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Ocean Theme -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="theme-card" onclick="selectTheme('ocean')" data-theme="ocean">
+                            <div class="theme-preview theme-ocean-preview">
+                                <div class="theme-overlay">
+                                    <i class="fas fa-check-circle theme-check"></i>
+                                </div>
+                            </div>
+                            <h6 class="text-center mt-2">🌊 Ocean</h6>
+                        </div>
+                    </div>
+                    
+                    <!-- Supercar Theme -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="theme-card" onclick="selectTheme('supercar')" data-theme="supercar">
+                            <div class="theme-preview theme-supercar">
+                                <div class="theme-overlay">
+                                    <i class="fas fa-check-circle theme-check"></i>
+                                </div>
+                            </div>
+                            <h6 class="text-center mt-2">🏎️ Supercar</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTheme()">
+                    <i class="fas fa-save"></i> Save Theme
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -205,6 +292,80 @@ socket.on('brain_state_update', function(data) {
         loadContentForState(data.brain_state);
     }
 });
+
+let selectedTheme = '{{ child.theme_preference }}';
+
+// Apply theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // ... existing code ...
+    
+    // Apply saved theme
+    applyTheme(selectedTheme);
+    
+    // Mark current theme as selected
+    markSelectedTheme(selectedTheme);
+});
+
+function selectTheme(theme) {
+    selectedTheme = theme;
+    
+    // Remove selection from all themes
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selection to clicked theme
+    const clickedCard = document.querySelector('.theme-card[data-theme="' + theme + '"]');
+    clickedCard.classList.add('selected');
+}
+
+function markSelectedTheme(theme) {
+    const card = document.querySelector('.theme-card[data-theme="' + theme + '"]');
+    if (card) {
+        card.classList.add('selected');
+    }
+}
+
+function applyTheme(theme) {
+    const body = document.body;
+    
+    // Remove all theme classes
+    body.classList.remove('theme-mountain', 'theme-space', 'theme-nature', 'theme-ocean', 'theme-supercar');
+    
+    // Add new theme class
+    body.classList.add('theme-' + theme);
+    
+    // Apply background
+    body.style.backgroundImage = 'url(/static/themes/' + theme + '.jpg)';
+    body.style.backgroundSize = 'cover';
+    body.style.backgroundPosition = 'center';
+    body.style.backgroundAttachment = 'fixed';
+    body.style.backgroundRepeat = 'no-repeat';
+}
+
+
+function saveTheme() {
+    fetch('/child/api/save-theme', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            child_id: childId,
+            theme: selectedTheme
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            applyTheme(selectedTheme);
+            bootstrap.Modal.getInstance(document.getElementById('themeModal')).hide();
+            alert('🎨 Theme saved successfully!');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving theme:', error);
+        alert('Failed to save theme');
+    });
+}
 
 function updateBrainState(data) {
     const stateInfo = data.state_info;
@@ -369,6 +530,109 @@ function logMood(mood) {
 </script>
 
 <style>
+/* Theme Modal Styles */
+.theme-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.theme-card:hover {
+    transform: scale(1.05);
+}
+
+.theme-preview {
+    height: 150px;
+    border-radius: 10px;
+    position: relative;
+    border: 3px solid #ddd;
+    transition: all 0.3s ease;
+    background-size: cover;
+    background-position: center;
+}
+
+/* Theme Preview Backgrounds */
+.theme-mountain {
+    background-image: url('/static/themes/mountain.jpg');
+}
+
+.theme-space-preview {
+    background-image: url('/static/themes/space.jpg');
+}
+
+.theme-nature-preview {
+    background-image: url('/static/themes/nature.jpg');
+}
+
+.theme-ocean-preview {
+    background-image: url('/static/themes/ocean.jpg');
+}
+
+.theme-supercar {
+    background-image: url('/static/themes/supercar.jpg');
+}
+
+.theme-card:hover .theme-preview {
+    border-color: #667eea;
+}
+
+.theme-card.selected .theme-preview {
+    border-color: #28a745;
+    border-width: 5px;
+}
+
+.theme-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.theme-card:hover .theme-overlay {
+    opacity: 1;
+}
+
+.theme-card.selected .theme-overlay {
+    opacity: 1;
+    background: rgba(40, 167, 69, 0.5);
+}
+
+.theme-check {
+    font-size: 3rem;
+    color: white;
+    display: none;
+}
+
+.theme-card.selected .theme-check {
+    display: block;
+}
+
+/* Make content readable on all themes */
+.theme-space .card,
+.theme-nature .card,
+.theme-ocean .card,
+.theme-mountain .card,
+.theme-supercar .card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.theme-space,
+.theme-nature,
+.theme-ocean,
+.theme-mountain,
+.theme-supercar {
+    min-height: 100vh;
+}
+
 .activity-card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -405,4 +669,5 @@ function logMood(mood) {
     transform: scale(1.05);
 }
 </style>
+
 {% endblock %}

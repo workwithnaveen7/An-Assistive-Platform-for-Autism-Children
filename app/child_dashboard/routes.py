@@ -310,3 +310,19 @@ def save_quiz_attempt():
     db.session.commit()
     
     return jsonify({'success': True})
+
+@child_bp.route('/api/save-theme', methods=['POST'])
+@login_required
+def save_theme():
+    """Save child's theme preference"""
+    data = request.json
+    child_id = data.get('child_id')
+    theme = data.get('theme')
+    
+    child = Child.query.get(child_id)
+    if child and child.parent_id == current_user.id:
+        child.theme_preference = theme
+        db.session.commit()
+        return jsonify({'success': True})
+    
+    return jsonify({'success': False}), 403
